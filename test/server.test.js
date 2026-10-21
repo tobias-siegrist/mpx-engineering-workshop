@@ -30,7 +30,14 @@ test("public catalog and match routes use fictional data", async () => {
     const matches = await (await fetch(`${base}/api/matches?candidateId=candidate-001`)).json();
     assert.equal(matches.jobs.length, 7);
     assert.equal(new Set(matches.jobs.map((job) => job.canonicalId)).size, 7);
-    assert.equal(matches.jobs[0].match.score, 80);
+    assert.equal(matches.jobs[0].match.score, 90);
+    assert.equal(matches.jobs[0].match.matchedCount, 3);
+    assert.deepEqual(matches.jobs[0].match.skillBreakdown[3], {
+      skill: "Frontend development",
+      matched: false,
+      reason: "Related via React (50% credit)",
+      credit: 0.5,
+    });
     assert.equal(JSON.stringify(matches).includes("privateNotes"), false);
   });
 });
