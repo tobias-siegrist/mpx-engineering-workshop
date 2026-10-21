@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createApplicationServer } from "../server.js";
+import { rankJobs } from "../server/matching.js";
+import { listJobs } from "../server/catalog.js";
+import { getCandidateById } from "../server/candidates.js";
 
 async function withServer(run) {
   const application = await createApplicationServer();
@@ -28,6 +31,21 @@ test("public catalog and match routes use fictional data", async () => {
     assert.equal(JSON.stringify(matches).includes("privateNotes"), false);
   });
 });
+
+for (const order of [["candidate-001", "candidate-002", "candidate-001", "candidate-003"], ["candidate-002", "candidate-001", "candidate-002", "candidate-003"]]) {
+  test(`match API isolates profiles in request order ${order.join(" → ")}`, async () => {
+    await withServer(async (base) => {
+      for (const id of order) {
+        const response = await fetch(`${base}/api/matches?candidateId=${id}`);
+        assert.equal(response.status, 200);
+        const body = await response.json();
+        assert.equal(body.candidateId, id);
+        assert.equal(body.scoredForCandidateId, id);
+        assert.deepEqual(body.jobs, rankJobs(listJobs(), getCandidateById(id)));
+      }
+    });
+  });
+}
 
 test("public candidate summaries omit recruiter-only fields", async () => {
   await withServer(async (base) => {
